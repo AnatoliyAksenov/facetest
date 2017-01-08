@@ -1,0 +1,141 @@
+<!doctype html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="description" content="A JavaScript Face test">
+        <meta name="author" content="Anatoliy A Aksenov">
+        <title>Face test</title>
+	
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Sans:regular,bold|Inconsolata|PT+Sans:400,700">
+	<style>
+		video { 
+			position:absolute;
+			visibility:hidden;
+		}
+		canvas { 
+			border:8px solid #fff;
+			visibility: hidden;
+                }
+
+	</style>
+    </head>
+    <body>
+	<video></video><br />
+	<canvas></canvas><br />
+	<img src="" alt="stream image" ></img>
+    <p class="messages">Messages</p>
+    <pre></pre>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+    <script language="javascript" type="text/javascript">
+    var socket = io();
+
+
+    socket.on('result', function(data){
+    	$('pre').text(JSON.stringify(data));
+    });
+    
+    socket.on('backward', function(data){
+	$('.messages').text('backward image: '+ data.length);
+	//$('pre').text(data);
+	$('img').attr('src', 'data:image/jpeg;base64,' + data);
+    });
+ 
+    var obj = {};
+
+    function onVideoFail(e) {
+        console.log('webcam fail!', e);
+      };
+
+    function hasGetUserMedia() {
+      // Note: Opera is unprefixed.
+      return !!(navigator.getUserMedia || navigator.webkitGetUserMedia ||
+                navigator.mozGetUserMedia || navigator.msGetUserMedia);
+    }
+
+    if (hasGetUserMedia()) {
+      // Good to go!
+    } else {
+      alert('getUserMedia() is not supported in your browser');
+    }
+
+    window.URL = window.URL || window.webkitURL;
+    navigator.getUserMedia  = navigator.getUserMedia || 
+                             navigator.webkitGetUserMedia ||
+                              navigator.mozGetUserMedia || 
+                               navigator.msGetUserMedia;
+
+    var video = document.querySelector('video');
+    var canvas = document.querySelector('canvas');
+    var webcamstream;
+    var width = 640;
+    var height = 480;
+    var isStreaming = false;
+    var context = canvas.getContext('2d');
+
+    if (navigator.getUserMedia) {
+      navigator.getUserMedia({audio: false, video: true}, function(stream) {
+        video.src = window.URL.createObjectURL(stream);
+        webcamstream = stream;
+	//video.pause();
+	//video.play();
+	obj.start = function(){
+		socket.connect('/');
+		socket.on('backward', function(data){
+			$('.messages').text('backward image: '+ data.length);
+		        //$('pre').text(data);
+        		$('img').attr('src', 'data:image/jpeg;base64,' + data);
+    		});
+		$(".messages").text("Start recording");
+		video.play();
+	};
+	obj.stop = function(){
+		socket.disconnect();
+		$(".messages").text("Stop recording");
+		video.pause();
+	};
+      }, onVideoFail);
+    } else {
+        alert ('failed');
+    }
+    video.addEventListener('canplay', function(e) {
+		    if (!isStreaming) {
+		    	// videoWidth isn't always set correctly in all browsers
+		    	if (video.videoWidth > 0) height = video.videoHeight / (video.videoWidth / width);
+			canvas.setAttribute('width', width);
+			canvas.setAttribute('height', height);
+			// Reverse the canvas image
+			context.translate(w, 0);
+  			context.scale(-1, 1);
+		      	isStreaming = true;
+		    }
+		}, false);
+
+    video.addEventListener('play', function() {
+			setInterval(function() {
+				if (video.paused || video.ended) return;
+				context.fillRect(0, 0, width, height);
+				context.drawImage(video, 0, 0, width, height);
+				//var imageData = context.getImageData(0, 0, width, height);
+				//var data = imageData.data;
+				var data = canvas.toDataURL('image/jpeg', 0.6);
+				//socket.emit('message', 'begin sending');
+				//var newblob = getAsJPEGBlob(canvas);
+				socket.emit('image', /.*,(.*)/.exec(data)[1] );
+				$(".messages").text("Putting image data");
+				//context.putImageData(imageData, 0, 0);
+			}, 1000);
+		}, false);
+
+    </script>
+
+    <div id="webcamcontrols">
+	<button class="emit" onclick="obj.start();">Start</button>
+	<button class="stop" onclick="obj.stop();">stop</button>
+    </div>
+    </body>
+</html>
+
