@@ -8,7 +8,6 @@
     "bluebird": "^3.4.7",
     "express": "4.10.1",
     "morgan": "1.4.1",
-    "opencv": "git+https://github.com/peterbraden/node-opencv.git",
     "socket.io": "1.2.1",
     "stream-buffers": "^3.0.1",
     "unirest": "^0.5.1"

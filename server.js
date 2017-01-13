@@ -33,8 +33,10 @@ function up(bufferStream){
 	});
 }
 
-var privateKey  = fs.readFileSync('/etc/ssl/private/new.ssl.key', 'utf8');
-var certificate = fs.readFileSync('/etc/ssl/certs/new.ssl.cert', 'utf8');
+var privateKeyFile = process.env.PRIVATE_KEY_FILE || '/etc/ssl/private/new.ssl.key';
+var certificateFile = process.env.CERTIFICATE_FILE || '/etc/ssl/certs/new.ssl.cert';
+var privateKey  = fs.readFileSync(privateKeyFile, 'utf8');
+var certificate = fs.readFileSync(certificateFile, 'utf8');
 
 var credentials = {key: privateKey, cert: certificate};
 
